@@ -1604,10 +1604,11 @@ async def add_litellm_data_to_request(
             continue
         data.pop(_internal_key, None)
     _reject_url_valued_destinations(data)
-    for _metadata_field in ("metadata", "litellm_metadata"):
-        if (_raw_metadata := data.get(_metadata_field)) is not None:
-            data.pop(_metadata_field)
-            data[_metadata_field] = _normalized_metadata_object(_metadata_field, _raw_metadata)
+    _raw_metadata_values: Final = tuple(
+        (_field, data.pop(_field)) for _field in ("metadata", "litellm_metadata") if data.get(_field) is not None
+    )
+    for _metadata_field, _raw_metadata in _raw_metadata_values:
+        data[_metadata_field] = _normalized_metadata_object(_metadata_field, _raw_metadata)
     # Strip spoofable auth metadata from user-supplied metadata dict
     _user_metadata = data.get("metadata")
     if isinstance(_user_metadata, dict):

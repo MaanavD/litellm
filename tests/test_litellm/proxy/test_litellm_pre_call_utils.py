@@ -465,6 +465,27 @@ async def test_add_litellm_data_to_request_rejects_non_object_metadata(field, va
 
 
 @pytest.mark.asyncio
+async def test_add_litellm_data_to_request_rejects_non_object_metadata_clears_both_fields():
+    """Both metadata and litellm_metadata must be popped before validation raises,
+    so failure-logging hooks that inspect the body don't crash on the sibling
+    non-dict and mask the 400 as a 500."""
+    data = {"input_file_id": "file-abc", "endpoint": "/v1/chat/completions", "metadata": "abc", "litellm_metadata": [1, 2]}
+
+    with pytest.raises(ProxyException):
+        await add_litellm_data_to_request(
+            data=data,
+            request=_batches_request_mock(),
+            user_api_key_dict=UserAPIKeyAuth(api_key="hashed-key"),
+            proxy_config=MagicMock(),
+            general_settings={},
+            version="test-version",
+        )
+
+    assert "metadata" not in data
+    assert "litellm_metadata" not in data
+
+
+@pytest.mark.asyncio
 async def test_add_litellm_data_to_request_parses_json_object_string_litellm_metadata():
     data = {"input_file_id": "file-abc", "litellm_metadata": json.dumps({"cost_centre": "research"})}
 
